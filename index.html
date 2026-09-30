@@ -3,13 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>시훈&이현</title>
-    <link
-      rel="stylesheet"
-      as="style"
-      crossorigin
-      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
-    />
+    <title id="pageTitle">시훈 & 이현</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -17,193 +11,246 @@
     <div id="dragonMascot" class="dragon-mascot"></div>
 
     <div class="container">
-      <header class="header">
-        <div class="header-badge">SIHUN & YIHYUN</div>
-        <h1>시훈 & 이현</h1>
+      <!-- 메인 타이틀 헤더 (고정) -->
+      <header class="app-header">
+        <h1 id="appTitleDisplay">시훈 & 이현</h1>
+        <p class="subtitle">일상과 목표를 기록하는 공간</p>
       </header>
 
-      <!-- TAB 1: 추억 일기장 (기본 탭) -->
-      <div id="tab-diary" class="tab-content active">
-        <!-- 작성 폼 열기 버튼 -->
-        <button class="btn-open-form" onclick="openDiaryModal()">
-          + 새 일기 작성하기 ✏️
-        </button>
-
-        <!-- 일기장 피드 카드 -->
-        <div class="card">
-          <h2 class="section-title">여행 추억 일기장</h2>
-          <div id="diaryList"></div>
-        </div>
-      </div>
-
-      <!-- TAB 2: 저축 대시보드 -->
-      <div id="tab-saving" class="tab-content">
-        <div class="card main-card">
-          <div class="main-card-header">
-            <div>
-              <div style="font-size: 13px; font-weight: 700; opacity: 0.9">
-                현재 저축한 금액
-              </div>
-              <div class="main-card-amount">
-                <span id="totalSaved">0</span> 원
-              </div>
-            </div>
-            <div class="percent-badge" id="progressPercent">0.0%</div>
-          </div>
-          <div class="progress-container">
-            <div class="progress-track">
-              <div id="progressFill" class="progress-fill"></div>
-            </div>
-          </div>
-          <div class="stats-grid">
-            <div>
-              <div class="stat-label">목표 금액</div>
-              <div class="stat-value"><span id="targetAmount">0</span>원</div>
-            </div>
-            <div>
-              <div class="stat-label">남은 금액</div>
-              <div class="stat-value">
-                <span id="remainingAmount">0</span>원
-              </div>
-            </div>
-            <div>
-              <div class="stat-label">저축 횟수</div>
-              <div class="stat-value" id="historyCount">0회</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="section-title">
-            <span>🪙 저축 기록하기</span>
-            <button
-              onclick="updateTargetAmount()"
-              style="
-                font-size: 11px;
-                background: none;
-                border: none;
-                color: #3b82f6;
-                cursor: pointer;
-                font-weight: 700;
-              "
-            >
-              [목표금액 수정]
+      <!-- 메인 콘텐츠 영역 (탭 스위칭) -->
+      <main class="main-content">
+        <!-- 1. 일기장 탭 (기본 활성화 - 저축 카드 미노출) -->
+        <section id="tabDiary" class="tab-content active card shadow">
+          <div class="card-header-flex">
+            <h2>📖 여행 일기장</h2>
+            <button class="btn-primary btn-snow" onclick="openDiaryModal()">
+              + 일기 쓰기
             </button>
           </div>
-          <form id="savingForm">
-            <div class="form-grid">
-              <div>
-                <label for="savingAmount">저축 금액 (원)</label>
-                <input
-                  type="number"
-                  id="savingAmount"
-                  placeholder="예: 50000"
-                  required
-                />
-              </div>
-              <div>
-                <label for="savingDate">날짜</label>
-                <input type="date" id="savingDate" required />
-              </div>
-              <div class="form-full">
-                <label for="savingNote">출처 / 요약</label>
-                <input
-                  type="text"
-                  id="savingNote"
-                  placeholder="예: 주말 알바, 용돈 이월"
-                  required
-                />
-              </div>
-              <div class="form-full">
-                <button type="submit" id="savingSubmitBtn" class="btn-submit">
-                  저축 기록 저금통에 넣기 🪙
+          <div id="diaryFeedList" class="diary-feed">
+            <!-- JS로 동적 추가 -->
+          </div>
+        </section>
+
+        <!-- 2. 저축 로그 탭 (저축 요약 카드 포함) -->
+        <section id="tabSaving" class="tab-content">
+          <!-- 대시보드 요약 카드 (저축 탭 안으로 이동) -->
+          <div class="dashboard-grid">
+            <!-- 목표 금액 카드 (수정 버튼 포함) -->
+            <div class="card shadow">
+              <div class="card-header-flex">
+                <span class="card-label">목표 금액</span>
+                <button class="btn-text-edit" onclick="openSettingsModal()">
+                  목표/타이틀 수정
                 </button>
               </div>
+              <div class="card-value" id="targetAmountDisplay">0원</div>
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="progressBarFill"></div>
+              </div>
+              <div class="progress-text" id="progressText">달성률 0%</div>
             </div>
-          </form>
-        </div>
 
-        <div class="card">
-          <h2 class="section-title">📜 저축 히스토리</h2>
-          <div style="overflow-x: auto">
-            <table>
-              <thead>
-                <tr>
-                  <th>회차</th>
-                  <th>날짜</th>
-                  <th>내용</th>
-                  <th>금액</th>
-                  <th style="text-align: center">삭제</th>
-                </tr>
-              </thead>
-              <tbody id="savingHistoryList"></tbody>
-            </table>
+            <!-- 현재 저축 금액 카드 -->
+            <div class="card shadow">
+              <div class="card-header-flex">
+                <span class="card-label">현재 저축한 금액</span>
+              </div>
+              <div class="card-value highlight" id="currentAmountDisplay">
+                0원
+              </div>
+              <div class="remaining-text" id="remainingAmountDisplay">
+                목표까지 0원 남음
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- 하단 네비게이션 바 -->
-    <nav class="bottom-nav">
-      <div class="nav-item active" onclick="switchTab('diary')">
-        <span class="nav-icon">📖</span>
-        <span>추억 일기장</span>
-      </div>
-      <div class="nav-item" onclick="switchTab('saving')">
-        <span class="nav-icon">🪙</span>
-        <span>저축 대시보드</span>
-      </div>
-    </nav>
-
-    <!-- 일기 작성 팝업 모달 -->
-    <div
-      id="diaryModal"
-      class="modal-overlay"
-      onclick="closeDiaryModalOnOverlay(event)"
-    >
-      <div class="modal-card">
-        <button class="modal-close" onclick="closeDiaryModal()">✕</button>
-        <h2 class="section-title" style="margin-bottom: 16px">
-          📖 새 추억 일기 남기기
-        </h2>
-        <form id="diaryForm">
-          <div class="form-grid">
-            <div>
-              <label for="diaryDate">날짜</label>
-              <input type="date" id="diaryDate" required />
-            </div>
-            <div>
-              <label for="diaryImage">사진 첨부 (선택)</label>
-              <input type="file" id="diaryImage" accept="image/*" />
-            </div>
-            <div class="form-full">
-              <label for="diaryText">내용 / 메모</label>
-              <textarea
-                id="diaryText"
-                placeholder="하고 싶은 일이나 오늘 이야기를 적어보세요 ❄️"
-                required
-              ></textarea>
-            </div>
-            <div class="form-full">
-              <button type="submit" id="diarySubmitBtn" class="btn-submit">
-                일기 저장하기 ❄️
+          <!-- 저축 테이블 카드 -->
+          <div class="card shadow">
+            <div class="card-header-flex">
+              <h2>🪙 저축 로그</h2>
+              <button class="btn-primary" onclick="openSavingModal()">
+                + 저축 기록하기
               </button>
             </div>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>회차</th>
+                    <th>날짜</th>
+                    <th>내용</th>
+                    <th>금액</th>
+                    <th style="text-align: center">관리</th>
+                  </tr>
+                </thead>
+                <tbody id="savingHistoryList">
+                  <!-- JS로 동적 추가 -->
+                </tbody>
+              </table>
+            </div>
           </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- 하단 고정 네비게이션 바 -->
+    <nav class="bottom-nav">
+      <button
+        class="nav-item active"
+        id="navDiaryBtn"
+        onclick="switchTab('diary')"
+      >
+        <span class="nav-icon">📖</span>
+        <span class="nav-label">일기장</span>
+      </button>
+      <button class="nav-item" id="navSavingBtn" onclick="switchTab('saving')">
+        <span class="nav-icon">🪙</span>
+        <span class="nav-label">저축 로그</span>
+      </button>
+    </nav>
+
+    <!-- ==========================================
+       모달 팝업 영역
+     ========================================== -->
+
+    <!-- 1. 목표 / 타이틀 수정 모달 -->
+    <div
+      id="settingsModal"
+      class="modal-overlay"
+      onclick="closeModalOnOverlay(event, 'settingsModal')"
+    >
+      <div class="modal-card">
+        <button class="modal-close" onclick="closeModal('settingsModal')">
+          ✕
+        </button>
+        <h2 class="modal-title">⚙️ 목표 & 타이틀 수정</h2>
+        <form id="settingsForm">
+          <div class="form-group">
+            <label for="inputAppTitle">여행 / 프로젝트 타이틀</label>
+            <input type="text" id="inputAppTitle" required />
+          </div>
+          <div class="form-group">
+            <label for="inputTargetAmount">목표 금액 (원)</label>
+            <input
+              type="number"
+              id="inputTargetAmount"
+              required
+              min="0"
+              step="1000"
+            />
+          </div>
+          <button type="submit" id="settingsSubmitBtn" class="btn-submit">
+            저장하기
+          </button>
         </form>
       </div>
     </div>
 
-    <!-- 이미지 크게보기 모달 -->
+    <!-- 2. 저축 추가 모달 -->
     <div
-      id="imageModal"
+      id="savingModal"
       class="modal-overlay"
-      onclick="this.style.display = 'none'"
+      onclick="closeModalOnOverlay(event, 'savingModal')"
     >
-      <img id="modalImg" class="modal-img" src="" />
+      <div class="modal-card">
+        <button class="modal-close" onclick="closeModal('savingModal')">
+          ✕
+        </button>
+        <h2 class="modal-title">🪙 새 저축 기록 추가</h2>
+        <form id="savingForm">
+          <div class="form-group">
+            <label for="savingAmount">저축 금액 (원)</label>
+            <input type="number" id="savingAmount" required min="100" />
+          </div>
+          <div class="form-group">
+            <label for="savingDate">날짜</label>
+            <input type="date" id="savingDate" required />
+          </div>
+          <div class="form-group">
+            <label for="savingNote">출처 / 요약</label>
+            <input
+              type="text"
+              id="savingNote"
+              placeholder="예: 월급 저금, 사용하지 않은 용돈"
+              required
+            />
+          </div>
+          <button type="submit" id="savingSubmitBtn" class="btn-submit">
+            기록하기
+          </button>
+        </form>
+      </div>
     </div>
 
-    <script src="config.js"></script>
+    <!-- 3. 저축 수정 모달 -->
+    <div
+      id="editSavingModal"
+      class="modal-overlay"
+      onclick="closeModalOnOverlay(event, 'editSavingModal')"
+    >
+      <div class="modal-card">
+        <button class="modal-close" onclick="closeModal('editSavingModal')">
+          ✕
+        </button>
+        <h2 class="modal-title">✏️ 저축 기록 수정</h2>
+        <form id="editSavingForm">
+          <input type="hidden" id="editSavingId" />
+          <div class="form-group">
+            <label for="editSavingAmount">저축 금액 (원)</label>
+            <input type="number" id="editSavingAmount" required />
+          </div>
+          <div class="form-group">
+            <label for="editSavingDate">날짜</label>
+            <input type="date" id="editSavingDate" required />
+          </div>
+          <div class="form-group">
+            <label for="editSavingNote">출처 / 요약</label>
+            <input type="text" id="editSavingNote" required />
+          </div>
+          <button type="submit" id="editSavingSubmitBtn" class="btn-submit">
+            수정 완료
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- 4. 일기 추가 모달 -->
+    <div
+      id="diaryModal"
+      class="modal-overlay"
+      onclick="closeModalOnOverlay(event, 'diaryModal')"
+    >
+      <div class="modal-card">
+        <button class="modal-close" onclick="closeModal('diaryModal')">
+          ✕
+        </button>
+        <h2 class="modal-title">📖 오늘 일기 작성</h2>
+        <form id="diaryForm">
+          <div class="form-group">
+            <label for="diaryDate">날짜</label>
+            <input type="date" id="diaryDate" required />
+          </div>
+          <div class="form-group">
+            <label for="diaryText">일기 내용</label>
+            <textarea
+              id="diaryText"
+              rows="5"
+              placeholder="오늘 어떤 일이 있으셨나요?"
+              required
+            ></textarea>
+          </div>
+          <div class="form-group">
+            <label for="diaryImage">사진 첨부 (선택)</label>
+            <input type="file" id="diaryImage" accept="image/*" />
+          </div>
+          <button type="submit" id="diarySubmitBtn" class="btn-submit btn-snow">
+            일기 등록하기 ❄️
+          </button>
+        </form>
+      </div>
+    </div>
+
     <script src="app.js"></script>
   </body>
 </html>
