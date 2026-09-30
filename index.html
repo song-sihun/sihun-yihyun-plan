@@ -3,416 +3,337 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>여행 저축 대시보드</title>
+  <title>오사카 설원 저축 & 다이어리 ❄️</title>
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <style>
     :root {
-      --primary: #4f46e5;
-      --primary-hover: #4338ca;
-      --primary-light: #eeef2;
-      --bg: #f8fafc;
-      --surface: #ffffff;
-      --text-main: #0f172a;
+      --snow-bg: #eef6ff;
+      --snow-card: #ffffff;
+      --primary: #60a5fa;
+      --primary-hover: #3b82f6;
+      --text-main: #1e293b;
       --text-sub: #64748b;
-      --border: #e2e8f0;
-      --danger: #ef4444;
-      --danger-hover: #dc2626;
-      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      --danger: #f87171;
+      --shadow: 0 10px 25px -5px rgba(186, 230, 253, 0.5);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-      background-color: var(--bg);
+      font-family: "Pretendard Variable", Pretendard, -apple-system, sans-serif;
+      background-color: var(--snow-bg);
+      background-image: 
+        radial-gradient(#93c5fd 0.75px, transparent 0.75px),
+        radial-gradient(#93c5fd 0.75px, var(--snow-bg) 0.75px);
+      background-size: 30px 30px;
       color: var(--text-main);
-      padding: 32px 16px;
-      line-height: 1.5;
+      padding: 20px 16px 90px 16px; /* 하단 탭바 높이만큼 여백 확보 */
     }
 
-    .container {
-      max-width: 840px;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
+    .container { max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+    
+    /* 탭 콘텐츠 제어 */
+    .tab-content { display: none; flex-direction: column; gap: 18px; }
+    .tab-content.active { display: flex; }
 
     /* 헤더 */
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .header-title-wrap {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .header-icon {
-      font-size: 28px;
-      background: #e0e7ff;
-      width: 48px;
-      height: 48px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 12px;
-    }
-    .header h1 {
-      font-size: 24px;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-    }
-    .badge {
-      background: #e0e7ff;
-      color: var(--primary);
-      font-size: 13px;
-      font-weight: 600;
-      padding: 4px 10px;
-      border-radius: 20px;
-    }
+    .header { text-align: center; padding: 10px 0 4px 0; }
+    .header-badge { display: inline-block; background: #fff; color: #3b82f6; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; margin-bottom: 6px; box-shadow: 0 2px 8px rgba(147, 197, 253, 0.4); }
+    .header h1 { font-size: 24px; font-weight: 800; color: #1e3a8a; }
 
-    /* 카드 기본 */
-    .card {
-      background: var(--surface);
-      border-radius: 16px;
-      padding: 24px;
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow-sm);
-    }
+    /* 카드 공통 */
+    .card { background: var(--snow-card); border-radius: 20px; padding: 20px; border: 2px solid #fff; box-shadow: var(--shadow); }
+    
+    /* 메인 대시보드 카드 */
+    .main-card { background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 50%, #60a5fa 100%); color: #1e3a8a; }
+    .main-card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+    .main-card-amount { font-size: 32px; font-weight: 800; margin-top: 4px; }
+    .percent-badge { background: rgba(255, 255, 255, 0.9); color: #2563eb; padding: 6px 14px; border-radius: 20px; font-size: 15px; font-weight: 800; }
 
-    /* 목표 & 달성률 메인 카드 */
-    .main-card {
-      background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
-      color: white;
-      border: none;
-      box-shadow: var(--shadow-md);
-      position: relative;
-      overflow: hidden;
-    }
-    .main-card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 20px;
-    }
-    .main-card-title {
-      font-size: 15px;
-      opacity: 0.9;
-      font-weight: 500;
-    }
-    .main-card-amount {
-      font-size: 32px;
-      font-weight: 800;
-      margin-top: 4px;
-      letter-spacing: -0.02em;
-    }
-    .percent-tag {
-      background: rgba(255, 255, 255, 0.2);
-      backdrop-filter: blur(8px);
-      padding: 6px 14px;
-      border-radius: 30px;
-      font-size: 16px;
-      font-weight: 700;
-    }
+    .progress-container { margin: 16px 0 12px 0; }
+    .progress-track { background: rgba(255, 255, 255, 0.6); border-radius: 999px; height: 14px; overflow: hidden; padding: 2px; }
+    .progress-fill { background: linear-gradient(90deg, #f472b6, #ec4899); height: 100%; width: 0%; border-radius: 999px; transition: width 0.6s ease; }
 
-    .progress-container { margin: 16px 0; }
-    .progress-track {
-      background: rgba(255, 255, 255, 0.25);
-      border-radius: 999px;
-      height: 14px;
-      overflow: hidden;
-    }
-    .progress-fill {
-      background: #ffffff;
-      height: 100%;
-      width: 0%;
-      border-radius: 999px;
-      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    }
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(4px); padding: 12px; border-radius: 14px; }
+    .stat-label { font-size: 11px; color: #3b82f6; font-weight: 700; }
+    .stat-value { font-size: 14px; font-weight: 800; color: #1e3a8a; margin-top: 2px; }
 
-    /* 그리드 통계 요약 */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin-top: 20px;
-      padding-top: 20px;
-      border-top: 1px solid rgba(255, 255, 255, 0.2);
-    }
-    .stat-item { text-align: left; }
-    .stat-label { font-size: 13px; opacity: 0.8; }
-    .stat-value { font-size: 16px; font-weight: 700; margin-top: 2px; }
+    /* 폼 요소 */
+    .section-title { font-size: 16px; font-weight: 800; margin-bottom: 12px; color: #1e3a8a; display: flex; justify-content: space-between; align-items: center; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .form-full { grid-column: span 2; }
+    label { display: block; font-size: 12px; font-weight: 700; color: var(--text-sub); margin-bottom: 4px; }
+    input, textarea { width: 100%; padding: 10px 12px; border: 1.5px solid #dbeafe; border-radius: 12px; font-size: 14px; font-family: inherit; background: #f8fafc; }
+    input:focus, textarea:focus { outline: none; border-color: var(--primary); background: #fff; }
+    textarea { resize: vertical; height: 80px; }
 
-    /* 입력 폼 */
-    .section-title {
-      font-size: 18px;
-      font-weight: 700;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .form-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    .form-group-full { grid-column: span 2; }
-    label {
-      display: block;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-sub);
-      margin-bottom: 6px;
-    }
-    input {
-      width: 100%;
-      padding: 12px 14px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      font-size: 14px;
-      font-family: inherit;
-      transition: all 0.2s ease;
-      background: #fafafa;
-    }
-    input:focus {
-      outline: none;
-      border-color: var(--primary);
-      background: #fff;
-      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
-    }
-
-    button.btn-submit {
-      width: 100%;
-      padding: 14px;
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 10px;
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background 0.2s ease, transform 0.1s ease;
-      margin-top: 8px;
-    }
+    button.btn-submit { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; }
     button.btn-submit:hover { background: var(--primary-hover); }
-    button.btn-submit:active { transform: scale(0.99); }
-    button.btn-submit:disabled { background: #94a3b8; cursor: not-allowed; }
+    button.btn-submit:disabled { background: #cbd5e1; cursor: not-allowed; }
 
     /* 테이블 히스토리 */
-    .table-container {
-      overflow-x: auto;
-      margin-top: 8px;
-    }
-    table {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0;
-    }
-    th {
-      background: #f8fafc;
-      color: var(--text-sub);
-      font-size: 13px;
-      font-weight: 600;
-      padding: 12px 16px;
-      text-align: left;
-      border-bottom: 1px solid var(--border);
-    }
-    th:first-child { border-top-left-radius: 8px; }
-    th:last-child { border-top-right-radius: 8px; }
-    td {
-      padding: 14px 16px;
-      font-size: 14px;
-      border-bottom: 1px solid var(--border);
-      color: var(--text-main);
-    }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background-color: #f8fafc; }
+    table { width: 100%; border-collapse: collapse; }
+    th { font-size: 12px; color: var(--text-sub); font-weight: 700; padding: 8px; text-align: left; border-bottom: 2px solid #f1f5f9; }
+    td { padding: 10px 8px; font-size: 13px; border-bottom: 1px solid #f1f5f9; }
+    .amount-cell { font-weight: 800; color: #2563eb; }
+    .btn-delete { background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px; }
+    .btn-delete:hover { color: var(--danger); }
 
-    .amount-cell {
+    /* 일기장 카드 스타일 */
+    .diary-item { display: flex; flex-direction: column; gap: 10px; border-bottom: 1px dashed #dbeafe; padding-bottom: 16px; margin-bottom: 16px; }
+    .diary-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .diary-header { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-sub); }
+    .diary-date { font-weight: 700; color: #3b82f6; }
+    .diary-img { width: 100%; max-height: 240px; object-fit: cover; border-radius: 12px; cursor: pointer; border: 1px solid #dbeafe; }
+    .diary-content { font-size: 14px; line-height: 1.5; color: var(--text-main); white-space: pre-wrap; }
+
+    /* 하단 고정 네비게이션 바 */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 65px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid #dbeafe;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 100;
+      box-shadow: 0 -4px 15px rgba(0,0,0,0.03);
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      color: #94a3b8;
+      font-size: 11px;
       font-weight: 700;
-      color: var(--primary);
-    }
-    .btn-delete {
-      background: none;
-      border: none;
-      color: var(--text-sub);
       cursor: pointer;
-      padding: 6px;
-      border-radius: 6px;
-      transition: all 0.2s ease;
+      width: 50%;
+      padding: 8px 0;
+      transition: all 0.2s;
     }
-    .btn-delete:hover {
-      color: var(--danger);
-      background: #fef2f2;
-    }
+    .nav-item.active { color: #2563eb; }
+    .nav-icon { font-size: 18px; }
 
-    /* 로딩 및 빈 상태 UI */
-    .empty-state {
-      text-align: center;
-      padding: 40px 20px;
-      color: var(--text-sub);
-      font-size: 14px;
-    }
-
-    /* 반응형 레이아웃 */
-    @media (max-width: 640px) {
-      body { padding: 16px 12px; }
-      .form-grid { grid-template-columns: 1fr; }
-      .form-group-full { grid-column: span 1; }
-      .stats-grid { grid-template-columns: 1fr; gap: 12px; }
-      .main-card-amount { font-size: 26px; }
-    }
+    /* 모달 */
+    .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; }
+    .modal-img { max-width: 90%; max-height: 80vh; border-radius: 12px; }
   </style>
 </head>
 <body>
 
+  <script>
+    // ==========================================
+    // 🔑 [설정] 본인의 API Key 값 수정 구역
+    // ==========================================
+    const BIN_ID = '6abcb54effd5d160533e136e';
+    const API_KEY = '$2a$10$u/7g2gIKKR213sq1WQRiDuTelVs3u4WKSPyfBuTx5ZzjSHwSUvvm.';
+    const IMGBB_API_KEY = '3676991782559515914e65b8d1a8df6b';
+    
+    const API_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+  </script>
+
   <div class="container">
-    <!-- 상단 타이틀 -->
     <header class="header">
-      <div class="header-title-wrap">
-        <div class="header-icon">✈️</div>
-        <div>
-          <h1 id="targetTitle">여행 저축 대시보드</h1>
-          <span style="font-size: 13px; color: var(--text-sub);">전역 자동 공유 다이어리</span>
-        </div>
-      </div>
-      <span class="badge" id="historyCount">0회 차 기록 중</span>
+      <div class="header-badge">❄️️ OSAKA TRIP DIARY</div>
+      <h1 id="pageTitle">오사카 설원 여행 🏯</h1>
     </header>
 
-    <!-- 메인 요약 대시보드 카드 -->
-    <div class="card main-card">
-      <div class="main-card-header">
-        <div>
-          <div class="main-card-title">현재 누적 저축액</div>
-          <div class="main-card-amount"><span id="totalSaved">0</span> 원</div>
+    <!-- ---------------------------------------- -->
+    <!-- TAB 1: 저축 대시보드 화면 -->
+    <!-- ---------------------------------------- -->
+    <div id="tab-saving" class="tab-content active">
+      <!-- 메인 요약 카드 -->
+      <div class="card main-card">
+        <div class="main-card-header">
+          <div>
+            <div style="font-size: 13px; font-weight: 700; opacity: 0.9;">현재 저축한 금액</div>
+            <div class="main-card-amount"><span id="totalSaved">0</span> 원</div>
+          </div>
+          <div class="percent-badge" id="progressPercent">0.0%</div>
         </div>
-        <div class="percent-tag" id="progressPercent">0.0%</div>
+        <div class="progress-container">
+          <div class="progress-track"><div id="progressFill" class="progress-fill"></div></div>
+        </div>
+        <div class="stats-grid">
+          <div>
+            <div class="stat-label">목표 금액</div>
+            <div class="stat-value"><span id="targetAmount">0</span>원</div>
+          </div>
+          <div>
+            <div class="stat-label">남은 금액</div>
+            <div class="stat-value"><span id="remainingAmount">0</span>원</div>
+          </div>
+          <div>
+            <div class="stat-label">저축 횟수</div>
+            <div class="stat-value" id="historyCount">0회</div>
+          </div>
+        </div>
       </div>
 
-      <div class="progress-container">
-        <div class="progress-track">
-          <div id="progressFill" class="progress-fill"></div>
+      <!-- 저축 금액 기록 폼 -->
+      <div class="card">
+        <div class="section-title">
+          <span>🪙 저축 기록하기</span>
+          <button onclick="updateTargetAmount()" style="font-size:11px; background:none; border:none; color:#3b82f6; cursor:pointer; font-weight:700;">[목표금액 수정]</button>
         </div>
+        <form id="savingForm">
+          <div class="form-grid">
+            <div>
+              <label for="savingAmount">저축 금액 (원)</label>
+              <input type="number" id="savingAmount" placeholder="예: 50000" required>
+            </div>
+            <div>
+              <label for="savingDate">날짜</label>
+              <input type="date" id="savingDate" required>
+            </div>
+            <div class="form-full">
+              <label for="savingNote">출처 / 요약</label>
+              <input type="text" id="savingNote" placeholder="예: 주말 알바, 용돈 이월" required>
+            </div>
+            <div class="form-full">
+              <button type="submit" id="savingSubmitBtn" class="btn-submit">저축 기록 저금통에 넣기 🪙</button>
+            </div>
+          </div>
+        </form>
       </div>
 
-      <div class="stats-grid">
-        <div class="stat-item">
-          <div class="stat-label">목표 금액</div>
-          <div class="stat-value"><span id="targetAmount">0</span> 원</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-label">남은 금액</div>
-          <div class="stat-value"><span id="remainingAmount">0</span> 원</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-label">최근 입금일</div>
-          <div class="stat-value" id="lastSavedDate">-</div>
+      <!-- 저축 히스토리 리스트 -->
+      <div class="card">
+        <h2 class="section-title">📜 저축 히스토리</h2>
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>회차</th>
+                <th>날짜</th>
+                <th>내용</th>
+                <th>금액</th>
+                <th style="text-align: center;">삭제</th>
+              </tr>
+            </thead>
+            <tbody id="savingHistoryList"></tbody>
+          </table>
         </div>
       </div>
     </div>
 
-    <!-- 저축 내역 추가 폼 -->
-    <div class="card">
-      <h2 class="section-title">➕ 저축 내역 입력</h2>
-      <form id="saveForm">
-        <div class="form-grid">
-          <div>
-            <label for="amountInput">입금 금액</label>
-            <input type="number" id="amountInput" placeholder="예: 100000" required>
+    <!-- ---------------------------------------- -->
+    <!-- TAB 2: 사진 & 메모 일기장 화면 -->
+    <!-- ---------------------------------------- -->
+    <div id="tab-diary" class="tab-content">
+      <!-- 일기/메모 작성 폼 -->
+      <div class="card">
+        <h2 class="section-title">📖 추억 & 일기 적기</h2>
+        <form id="diaryForm">
+          <div class="form-grid">
+            <div>
+              <label for="diaryDate">날짜</label>
+              <input type="date" id="diaryDate" required>
+            </div>
+            <div>
+              <label for="diaryImage">사진 첨부 (선택)</label>
+              <input type="file" id="diaryImage" accept="image/*">
+            </div>
+            <div class="form-full">
+              <label for="diaryText">하고 싶은 일 / 일기 메모</label>
+              <textarea id="diaryText" placeholder="오사카에 가서 하고 싶은 일이나, 저축하면서 있었던 일을 일기처럼 자유롭게 적어보세요 ❄️" required></textarea>
+            </div>
+            <div class="form-full">
+              <button type="submit" id="diarySubmitBtn" class="btn-submit">일기장 남기기 ❄️</button>
+            </div>
           </div>
-          <div>
-            <label for="dateInput">날짜</label>
-            <input type="date" id="dateInput" required>
-          </div>
-          <div class="form-group-full">
-            <label for="noteInput">내용 / 출처</label>
-            <input type="text" id="noteInput" placeholder="예: 주말 카페 알바, 이월금" required>
-          </div>
-          <div class="form-group-full">
-            <button type="submit" id="submitBtn" class="btn-submit">저축 기록 저장하기</button>
-          </div>
-        </div>
-      </form>
-    </div>
+        </form>
+      </div>
 
-    <!-- 저축 내역 리스트 -->
-    <div class="card">
-      <h2 class="section-title">📜 저축 히스토리</h2>
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>회차</th>
-              <th>날짜</th>
-              <th>내용</th>
-              <th>금액</th>
-              <th style="text-align: center;">삭제</th>
-            </tr>
-          </thead>
-          <tbody id="historyList">
-            <!-- 자바스크립트로 동적 생성 -->
-          </tbody>
-        </table>
-        <div id="emptyState" class="empty-state" style="display: none;">
-          아직 등록된 저축 내역이 없습니다. 첫 저축을 기록해 보세요!
+      <!-- 일기장 리스트 -->
+      <div class="card">
+        <h2 class="section-title">❄️ 여행 추억 일기장</h2>
+        <div id="diaryList">
+          <!-- 자바스크립트로 생성 -->
         </div>
       </div>
     </div>
   </div>
 
+  <!-- 하단 고정 네비게이션 바 -->
+  <nav class="bottom-nav">
+    <div class="nav-item active" onclick="switchTab('saving')">
+      <span class="nav-icon">🪙</span>
+      <span>저축 대시보드</span>
+    </div>
+    <div class="nav-item" onclick="switchTab('diary')">
+      <span class="nav-icon">📖</span>
+      <span>추억 일기장</span>
+    </div>
+  </nav>
+
+  <!-- 이미지 크게보기 모달 -->
+  <div id="imageModal" class="modal" onclick="this.style.display='none'">
+    <img id="modalImg" class="modal-img" src="">
+  </div>
+
   <script>
-    // ⚠️ 본인의 JSONBin.io 정보 입력
-    const BIN_ID = '6abcb54effd5d160533e136e'; 
-    const API_KEY = '$2a$10$u/7g2gIKKR213sq1WQRiDuTelVs3u4WKSPyfBuTx5ZzjSHwSUvvm.';
-    const API_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+    // 기본 데이터 구조
+    let appData = { 
+      target: { title: "오사카 설원 여행 🏯", targetAmount: 2000000 }, 
+      history: [], 
+      diaries: [] 
+    };
 
-    let appData = { target: { title: "여행 저축", targetAmount: 0 }, history: [] };
+    // 탭 전환 기능
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
 
-    // 1. 데이터 가져오기 (Read)
+      if (tabName === 'saving') {
+        document.getElementById('tab-saving').classList.add('active');
+        event.currentTarget.classList.add('active');
+      } else {
+        document.getElementById('tab-diary').classList.add('active');
+        event.currentTarget.classList.add('active');
+      }
+    }
+
+    // ImgBB 사진 업로드
+    async function uploadImage(file) {
+      if (!file) return null;
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      return data.success ? data.data.url : null;
+    }
+
+    // JSONBin 불러오기
     async function fetchStore() {
       try {
-        const res = await fetch(API_URL, {
-          headers: { 'X-Master-Key': API_KEY }
-        });
+        const res = await fetch(API_URL, { headers: { 'X-Master-Key': API_KEY } });
         const result = await res.json();
         appData = result.record;
+        if (!appData.diaries) appData.diaries = []; // 기존 데이터에 diaries 없으면 자동 초기화
         renderUI();
-      } catch (err) {
-        alert('데이터를 불러오는데 실패했습니다. BIN_ID와 API_KEY를 확인해주세요.');
-      }
+      } catch (err) { alert('데이터를 불러오는데 실패했습니다.'); }
     }
 
-    // 2. 데이터 저장하기 (Update)
+    // JSONBin 저장하기
     async function saveStore() {
-      const submitBtn = document.getElementById('submitBtn');
-      submitBtn.disabled = true;
-      submitBtn.innerText = '저장 중...';
-
-      try {
-        await fetch(API_URL, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Master-Key': API_KEY
-          },
-          body: JSON.stringify(appData)
-        });
-        renderUI();
-      } catch (err) {
-        alert('저장에 실패했습니다.');
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerText = '저축 기록 저장하기';
-      }
+      await fetch(API_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+        body: JSON.stringify(appData)
+      });
+      renderUI();
     }
 
-    // 3. UI 렌더링 및 통계 계산
+    // UI 전체 렌더링
     function renderUI() {
-      document.getElementById('targetTitle').innerText = appData.target.title || "여행 저축";
+      // 1. 저축 대시보드 계산
       const targetAmt = Number(appData.target.targetAmount) || 0;
       document.getElementById('targetAmount').innerText = targetAmt.toLocaleString();
 
@@ -424,73 +345,128 @@
       document.getElementById('remainingAmount').innerText = remaining.toLocaleString();
       document.getElementById('progressPercent').innerText = `${percent}%`;
       document.getElementById('progressFill').style.width = `${percent}%`;
-      document.getElementById('historyCount').innerText = `${appData.history.length}회 차 기록 중`;
+      document.getElementById('historyCount').innerText = `${appData.history.length}회`;
 
-      // 최근 입금일 계산
-      if (appData.history.length > 0) {
-        const sortedHistory = [...appData.history].sort((a, b) => new Date(b.date) - new Date(a.date));
-        document.getElementById('lastSavedDate').innerText = sortedHistory[0].date;
+      // 저축 히스토리 렌더링
+      const savingBody = document.getElementById('savingHistoryList');
+      savingBody.innerHTML = '';
+      [...appData.history].reverse().forEach((item) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong style="color:#60a5fa;">#${item.id}</strong></td>
+          <td style="color: var(--text-sub);">${item.date}</td>
+          <td>${item.note}</td>
+          <td class="amount-cell">+${Number(item.amount).toLocaleString()}원</td>
+          <td style="text-align: center;"><button class="btn-delete" onclick="deleteHistory(${item.id})">✕</button></td>
+        `;
+        savingBody.appendChild(tr);
+      });
+
+      // 2. 일기장 렌더링
+      const diaryContainer = document.getElementById('diaryList');
+      diaryContainer.innerHTML = '';
+
+      if (appData.diaries.length === 0) {
+        diaryContainer.innerHTML = '<div style="text-align:center; padding:20px; color:#64748b; font-size:13px;">아직 일기가 없습니다. 하고 싶은 일이나 추억을 적어보세요! ❄️</div>';
       } else {
-        document.getElementById('lastSavedDate').innerText = '-';
-      }
+        [...appData.diaries].reverse().forEach((diary) => {
+          const div = document.createElement('div');
+          div.className = 'diary-item';
+          const imgHtml = diary.imageUrl ? `<img src="${diary.imageUrl}" class="diary-img" onclick="openModal('${diary.imageUrl}')">` : '';
 
-      // 테이블 렌더링
-      const tbody = document.getElementById('historyList');
-      const emptyState = document.getElementById('emptyState');
-      tbody.innerHTML = '';
-
-      if (appData.history.length === 0) {
-        emptyState.style.display = 'block';
-      } else {
-        emptyState.style.display = 'none';
-        // 내림차순(최신순) 정렬 표시
-        const displayHistory = [...appData.history].reverse();
-
-        displayHistory.forEach((item) => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td><strong>#${item.id}</strong></td>
-            <td style="color: var(--text-sub);">${item.date}</td>
-            <td>${item.note}</td>
-            <td class="amount-cell">+${Number(item.amount).toLocaleString()}원</td>
-            <td style="text-align: center;">
-              <button class="btn-delete" onclick="deleteHistory(${item.id})" title="삭제">
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-              </button>
-            </td>
+          div.innerHTML = `
+            <div class="diary-header">
+              <span class="diary-date">📅 ${diary.date}</span>
+              <button class="btn-delete" onclick="deleteDiary(${diary.id})">✕ 삭제</button>
+            </div>
+            ${imgHtml}
+            <div class="diary-content">${diary.content}</div>
           `;
-          tbody.appendChild(tr);
+          diaryContainer.appendChild(div);
         });
       }
     }
 
-    // 4. 입력 폼 제출 이벤트
-    document.getElementById('saveForm').addEventListener('submit', async (e) => {
+    // 저축 기록 제출
+    document.getElementById('savingForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const amount = document.getElementById('amountInput').value;
-      const date = document.getElementById('dateInput').value;
-      const note = document.getElementById('noteInput').value;
+      const btn = document.getElementById('savingSubmitBtn');
+      btn.disabled = true; btn.innerText = '저장 중...';
 
+      const amount = document.getElementById('savingAmount').value;
+      const date = document.getElementById('savingDate').value;
+      const note = document.getElementById('savingNote').value;
       const nextId = appData.history.length > 0 ? Math.max(...appData.history.map(h => h.id)) + 1 : 1;
 
       appData.history.push({ id: nextId, amount: Number(amount), date, note });
       await saveStore();
 
-      document.getElementById('amountInput').value = '';
-      document.getElementById('noteInput').value = '';
+      document.getElementById('savingAmount').value = '';
+      document.getElementById('savingNote').value = '';
+      btn.disabled = false; btn.innerText = '저축 기록 저금통에 넣기 🪙';
     });
 
-    // 5. 내역 삭제 기능
+    // 일기 제출
+    document.getElementById('diaryForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('diarySubmitBtn');
+      btn.disabled = true; btn.innerText = '일기 올리는 중... ❄️';
+
+      try {
+        const fileInput = document.getElementById('diaryImage');
+        let imageUrl = null;
+        if (fileInput.files.length > 0) {
+          imageUrl = await uploadImage(fileInput.files[0]);
+        }
+
+        const date = document.getElementById('diaryDate').value;
+        const content = document.getElementById('diaryText').value;
+        const nextId = appData.diaries.length > 0 ? Math.max(...appData.diaries.map(d => d.id)) + 1 : 1;
+
+        appData.diaries.push({ id: nextId, date, content, imageUrl });
+        await saveStore();
+
+        document.getElementById('diaryText').value = '';
+        document.getElementById('diaryImage').value = '';
+      } catch(err) {
+        alert('일기 저장 실패');
+      } finally {
+        btn.disabled = false; btn.innerText = '일기장 남기기 ❄️';
+      }
+    });
+
+    // 목표 금액 변경 기능
+    async function updateTargetAmount() {
+      const newTarget = prompt("새로운 목표 금액을 입력하세요 (숫자만):", appData.target.targetAmount);
+      if (newTarget && !isNaN(newTarget)) {
+        appData.target.targetAmount = Number(newTarget);
+        await saveStore();
+      }
+    }
+
+    // 저축 내역 삭제
     async function deleteHistory(id) {
-      if (!confirm('해당 저축 기록을 삭제하시겠습니까?')) return;
+      if (!confirm('해당 저축 내역을 삭제하시겠습니까?')) return;
       appData.history = appData.history.filter(item => item.id !== id);
       await saveStore();
     }
 
-    // 오늘 날짜 자동 입력
-    document.getElementById('dateInput').value = new Date().toISOString().substring(0, 10);
-    
-    // 초기 불러오기 실행
+    // 일기 삭제
+    async function deleteDiary(id) {
+      if (!confirm('해당 일기를 삭제하시겠습니까?')) return;
+      appData.diaries = appData.diaries.filter(item => item.id !== id);
+      await saveStore();
+    }
+
+    function openModal(url) {
+      document.getElementById('modalImg').src = url;
+      document.getElementById('imageModal').style.display = 'flex';
+    }
+
+    // 오늘 날짜 세팅 및 시작
+    const today = new Date().toISOString().substring(0, 10);
+    document.getElementById('savingDate').value = today;
+    document.getElementById('diaryDate').value = today;
     fetchStore();
   </script>
 </body>
