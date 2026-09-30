@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>여행 저축 대시보드</title>
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --primary-light: #eeef2;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --text-main: #0f172a;
+      --text-sub: #64748b;
+      --border: #e2e8f0;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      padding: 32px 16px;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 840px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* 헤더 */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header-icon {
+      font-size: 28px;
+      background: #e0e7ff;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+    }
+    .header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .badge {
+      background: #e0e7ff;
+      color: var(--primary);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    /* 카드 기본 */
+    .card {
+      background: var(--surface);
+      border-radius: 16px;
+      padding: 24px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* 목표 & 달성률 메인 카드 */
+    .main-card {
+      background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+      color: white;
+      border: none;
+      box-shadow: var(--shadow-md);
+      position: relative;
+      overflow: hidden;
+    }
+    .main-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+    .main-card-title {
+      font-size: 15px;
+      opacity: 0.9;
+      font-weight: 500;
+    }
+    .main-card-amount {
+      font-size: 32px;
+      font-weight: 800;
+      margin-top: 4px;
+      letter-spacing: -0.02em;
+    }
+    .percent-tag {
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(8px);
+      padding: 6px 14px;
+      border-radius: 30px;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .progress-container { margin: 16px 0; }
+    .progress-track {
+      background: rgba(255, 255, 255, 0.25);
+      border-radius: 999px;
+      height: 14px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      background: #ffffff;
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* 그리드 통계 요약 */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .stat-item { text-align: left; }
+    .stat-label { font-size: 13px; opacity: 0.8; }
+    .stat-value { font-size: 16px; font-weight: 700; margin-top: 2px; }
+
+    /* 입력 폼 */
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .form-group-full { grid-column: span 2; }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-sub);
+      margin-bottom: 6px;
+    }
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: all 0.2s ease;
+      background: #fafafa;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+    }
+
+    button.btn-submit {
+      width: 100%;
+      padding: 14px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.1s ease;
+      margin-top: 8px;
+    }
+    button.btn-submit:hover { background: var(--primary-hover); }
+    button.btn-submit:active { transform: scale(0.99); }
+    button.btn-submit:disabled { background: #94a3b8; cursor: not-allowed; }
+
+    /* 테이블 히스토리 */
+    .table-container {
+      overflow-x: auto;
+      margin-top: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    th {
+      background: #f8fafc;
+      color: var(--text-sub);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th:first-child { border-top-left-radius: 8px; }
+    th:last-child { border-top-right-radius: 8px; }
+    td {
+      padding: 14px 16px;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-main);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background-color: #f8fafc; }
+
+    .amount-cell {
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .btn-delete {
+      background: none;
+      border: none;
+      color: var(--text-sub);
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+    .btn-delete:hover {
+      color: var(--danger);
+      background: #fef2f2;
+    }
+
+    /* 로딩 및 빈 상태 UI */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-sub);
+      font-size: 14px;
+    }
+
+    /* 반응형 레이아웃 */
+    @media (max-width: 640px) {
+      body { padding: 16px 12px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-group-full { grid-column: span 1; }
+      .stats-grid { grid-template-columns: 1fr; gap: 12px; }
+      .main-card-amount { font-size: 26px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- 상단 타이틀 -->
+    <header class="header">
+      <div class="header-title-wrap">
+        <div class="header-icon">✈️</div>
+        <div>
+          <h1 id="targetTitle">여행 저축 대시보드</h1>
+          <span style="font-size: 13px; color: var(--text-sub);">전역 자동 공유 다이어리</span>
+        </div>
+      </div>
+      <span class="badge" id="historyCount">0회 차 기록 중</span>
+    </header>
+
+    <!-- 메인 요약 대시보드 카드 -->
+    <div class="card main-card">
+      <div class="main-card-header">
+        <div>
+          <div class="main-card-title">현재 누적 저축액</div>
+          <div class="main-card-amount"><span id="totalSaved">0</span> 원</div>
+        </div>
+        <div class="percent-tag" id="progressPercent">0.0%</div>
+      </div>
+
+      <div class="progress-container">
+        <div class="progress-track">
+          <div id="progressFill" class="progress-fill"></div>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-label">목표 금액</div>
+          <div class="stat-value"><span id="targetAmount">0</span> 원</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">남은 금액</div>
+          <div class="stat-value"><span id="remainingAmount">0</span> 원</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">최근 입금일</div>
+          <div class="stat-value" id="lastSavedDate">-</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 저축 내역 추가 폼 -->
+    <div class="card">
+      <h2 class="section-title">➕ 저축 내역 입력</h2>
+      <form id="saveForm">
+        <div class="form-grid">
+          <div>
+            <label for="amountInput">입금 금액</label>
+            <input type="number" id="amountInput" placeholder="예: 100000" required>
+          </div>
+          <div>
+            <label for="dateInput">날짜</label>
+            <input type="date" id="dateInput" required>
+          </div>
+          <div class="form-group-full">
+            <label for="noteInput">내용 / 출처</label>
+            <input type="text" id="noteInput" placeholder="예: 주말 카페 알바, 이월금" required>
+          </div>
+          <div class="form-group-full">
+            <button type="submit" id="submitBtn" class="btn-submit">저축 기록 저장하기</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- 저축 내역 리스트 -->
+    <div class="card">
+      <h2 class="section-title">📜 저축 히스토리</h2>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>회차</th>
+              <th>날짜</th>
+              <th>내용</th>
+              <th>금액</th>
+              <th style="text-align: center;">삭제</th>
+            </tr>
+          </thead>
+          <tbody id="historyList">
+            <!-- 자바스크립트로 동적 생성 -->
+          </tbody>
+        </table>
+        <div id="emptyState" class="empty-state" style="display: none;">
+          아직 등록된 저축 내역이 없습니다. 첫 저축을 기록해 보세요!
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ⚠️ 본인의 JSONBin.io 정보 입력
+    const BIN_ID = '6abcb54effd5d160533e136e'; 
+    const API_KEY = '$2a$10$u/7g2gIKKR213sq1WQRiDuTelVs3u4WKSPyfBuTx5ZzjSHwSUvvm.';
+    const API_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+
+    let appData = { target: { title: "여행 저축", targetAmount: 0 }, history: [] };
+
+    // 1. 데이터 가져오기 (Read)
+    async function fetchStore() {
+      try {
+        const res = await fetch(API_URL, {
+          headers: { 'X-Master-Key': API_KEY }
+        });
+        const result = await res.json();
+        appData = result.record;
+        renderUI();
+      } catch (err) {
+        alert('데이터를 불러오는데 실패했습니다. BIN_ID와 API_KEY를 확인해주세요.');
+      }
+    }
+
+    // 2. 데이터 저장하기 (Update)
+    async function saveStore() {
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.innerText = '저장 중...';
+
+      try {
+        await fetch(API_URL, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Master-Key': API_KEY
+          },
+          body: JSON.stringify(appData)
+        });
+        renderUI();
+      } catch (err) {
+        alert('저장에 실패했습니다.');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = '저축 기록 저장하기';
+      }
+    }
+
+    // 3. UI 렌더링 및 통계 계산
+    function renderUI() {
+      document.getElementById('targetTitle').innerText = appData.target.title || "여행 저축";
+      const targetAmt = Number(appData.target.targetAmount) || 0;
+      document.getElementById('targetAmount').innerText = targetAmt.toLocaleString();
+
+      const totalSaved = appData.history.reduce((sum, item) => sum + Number(item.amount), 0);
+      const remaining = Math.max(targetAmt - totalSaved, 0);
+      const percent = targetAmt > 0 ? Math.min(((totalSaved / targetAmt) * 100).toFixed(1), 100) : 0;
+
+      document.getElementById('totalSaved').innerText = totalSaved.toLocaleString();
+      document.getElementById('remainingAmount').innerText = remaining.toLocaleString();
+      document.getElementById('progressPercent').innerText = `${percent}%`;
+      document.getElementById('progressFill').style.width = `${percent}%`;
+      document.getElementById('historyCount').innerText = `${appData.history.length}회 차 기록 중`;
+
+      // 최근 입금일 계산
+      if (appData.history.length > 0) {
+        const sortedHistory = [...appData.history].sort((a, b) => new Date(b.date) - new Date(a.date));
+        document.getElementById('lastSavedDate').innerText = sortedHistory[0].date;
+      } else {
+        document.getElementById('lastSavedDate').innerText = '-';
+      }
+
+      // 테이블 렌더링
+      const tbody = document.getElementById('historyList');
+      const emptyState = document.getElementById('emptyState');
+      tbody.innerHTML = '';
+
+      if (appData.history.length === 0) {
+        emptyState.style.display = 'block';
+      } else {
+        emptyState.style.display = 'none';
+        // 내림차순(최신순) 정렬 표시
+        const displayHistory = [...appData.history].reverse();
+
+        displayHistory.forEach((item) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><strong>#${item.id}</strong></td>
+            <td style="color: var(--text-sub);">${item.date}</td>
+            <td>${item.note}</td>
+            <td class="amount-cell">+${Number(item.amount).toLocaleString()}원</td>
+            <td style="text-align: center;">
+              <button class="btn-delete" onclick="deleteHistory(${item.id})" title="삭제">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+              </button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+    }
+
+    // 4. 입력 폼 제출 이벤트
+    document.getElementById('saveForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const amount = document.getElementById('amountInput').value;
+      const date = document.getElementById('dateInput').value;
+      const note = document.getElementById('noteInput').value;
+
+      const nextId = appData.history.length > 0 ? Math.max(...appData.history.map(h => h.id)) + 1 : 1;
+
+      appData.history.push({ id: nextId, amount: Number(amount), date, note });
+      await saveStore();
+
+      document.getElementById('amountInput').value = '';
+      document.getElementById('noteInput').value = '';
+    });
+
+    // 5. 내역 삭제 기능
+    async function deleteHistory(id) {
+      if (!confirm('해당 저축 기록을 삭제하시겠습니까?')) return;
+      appData.history = appData.history.filter(item => item.id !== id);
+      await saveStore();
+    }
+
+    // 오늘 날짜 자동 입력
+    document.getElementById('dateInput').value = new Date().toISOString().substring(0, 10);
+    
+    // 초기 불러오기 실행
+    fetchStore();
+  </script>
+</body>
+</html>
