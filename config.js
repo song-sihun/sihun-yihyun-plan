@@ -1,0 +1,5 @@
+const CONFIG = {
+  BIN_ID: "6abcb54effd5d160533e136e",
+  API_KEY: "$2a$10$u/7g2gIKKR213sq1WQRiDuTelVs3u4WKSPyfBuTx5ZzjSHwSUvvm.",
+  IMGBB_API_KEY: "3676991782559515914e65b8d1a8df6b",
+};
