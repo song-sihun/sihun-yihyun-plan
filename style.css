@@ -13,6 +13,12 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  padding: 24px 16px 80px 16px;
   font-family:
     "Pretendard Variable",
     Pretendard,
@@ -21,12 +27,6 @@
     "Segoe UI",
     Roboto,
     sans-serif;
-}
-
-body {
-  background-color: var(--bg-color);
-  color: var(--text-main);
-  padding: 24px 16px 80px 16px;
 }
 
 .container {
@@ -265,7 +265,7 @@ body {
   color: var(--primary);
 }
 
-/* 일기 피드 스타일 */
+/* 일기 피드 및 폰트 개선 */
 .diary-feed {
   display: flex;
   flex-direction: column;
@@ -274,39 +274,44 @@ body {
 
 .diary-item {
   border: 1px solid var(--border-color);
-  border-radius: 14px;
-  padding: 16px;
+  border-radius: 18px;
+  padding: 18px;
   background: #ffffff;
+  box-shadow: 0 4px 12px rgba(148, 163, 184, 0.08);
 }
 
 .diary-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .diary-date {
   font-size: 13px;
   font-weight: 700;
   color: var(--primary);
+  letter-spacing: -0.3px;
 }
 
+/* 인스타그램 스타일 1:1 이미지 크롭 */
 .diary-img {
   width: 100%;
   aspect-ratio: 1 / 1;
   object-fit: cover;
-  border-radius: 10px;
-  margin-bottom: 10px;
+  border-radius: 14px;
+  margin-bottom: 12px;
   border: 1px solid #f1f5f9;
 }
 
 .diary-content {
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 400;
   line-height: 1.65;
   color: #334155;
   white-space: pre-wrap;
   word-break: break-all;
+  letter-spacing: -0.2px;
 }
 
 /* 모달 스타일 */
@@ -385,7 +390,7 @@ body {
   margin-top: 8px;
 }
 
-/* 돌아다니는 마스코트 */
+/* 마스코트 스위밍/걸어다니기 */
 .dragon-mascot {
   position: fixed;
   width: 85px;
@@ -406,13 +411,13 @@ body {
 
 @keyframes dragonWalkRow1 {
   0% {
-    background-position: 0px 0px;
+    background-position: 2px 0px;
   }
   33% {
-    background-position: -85.3px 2px;
+    background-position: -86.3px 0px;
   }
   66% {
-    background-position: -170.6px 1px;
+    background-position: -175.6px 0px;
   }
   100% {
     background-position: 0px 0px;

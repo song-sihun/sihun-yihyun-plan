@@ -6,15 +6,20 @@ const CONFIG = {
   IMGBB_API_KEY: "3676991782559515914e65b8d1a8df6b",
 };
 
+// 통합 앱 데이터
 let appData = {
   settings: {
-    title: "시훈 & 이현 여행",
+    title: "시훈 & 이현 함께해용",
     targetAmount: 1000000,
   },
   history: [],
   diaries: [],
 };
 
+// 스크롤 시 보여줄 일기 수 제어 (기본 5개)
+let visibleDiaryCount = 5;
+
+// 초기화
 document.addEventListener("DOMContentLoaded", () => {
   fetchStore();
   initDateInputs();
@@ -27,7 +32,7 @@ function initDateInputs() {
   document.getElementById("diaryDate").value = today;
 }
 
-// 탭 스위칭
+// 탭 전환 제어
 function switchTab(tabName) {
   const diaryTab = document.getElementById("tabDiary");
   const savingTab = document.getElementById("tabSaving");
@@ -39,6 +44,8 @@ function switchTab(tabName) {
     savingTab.classList.remove("active");
     diaryBtn.classList.add("active");
     savingBtn.classList.remove("active");
+    visibleDiaryCount = 5; // 일기장 탭 복귀 시 5개로 초기화
+    renderUI();
   } else {
     savingTab.classList.add("active");
     diaryTab.classList.remove("active");
@@ -47,7 +54,7 @@ function switchTab(tabName) {
   }
 }
 
-// JSONBin 데이터 패치
+// JSONBin API 연동
 async function fetchStore() {
   try {
     const res = await fetch(
@@ -87,7 +94,7 @@ async function saveStore() {
   }
 }
 
-// ImgBB 이미지 업로드
+// ImgBB 업로드
 async function uploadImage(file) {
   if (!file) return { url: null, deleteUrl: null };
   const formData = new FormData();
@@ -112,6 +119,7 @@ async function uploadImage(file) {
 
 // UI 렌더링
 function renderUI() {
+  // 1. 대시보드 업데이트
   document.getElementById("appTitleDisplay").innerText = appData.settings.title;
   document.getElementById("pageTitle").innerText = appData.settings.title;
   document.getElementById("targetAmountDisplay").innerText =
@@ -136,6 +144,7 @@ function renderUI() {
   document.getElementById("progressBarFill").style.width = `${percent}%`;
   document.getElementById("progressText").innerText = `달성률 ${percent}%`;
 
+  // 2. 저축 로그 목록 (ID 역순)
   const savingBody = document.getElementById("savingHistoryList");
   savingBody.innerHTML = "";
   [...appData.history].reverse().forEach((item) => {
@@ -155,9 +164,16 @@ function renderUI() {
     savingBody.appendChild(tr);
   });
 
+  // 3. 일기장 피드 (날짜 기준 최신순 정렬 및 5개씩 무한 스크롤)
   const diaryFeed = document.getElementById("diaryFeedList");
   diaryFeed.innerHTML = "";
-  [...appData.diaries].reverse().forEach((item) => {
+
+  const sortedDiaries = [...appData.diaries].sort(
+    (a, b) => new Date(b.date) - new Date(a.date) || b.id - a.id,
+  );
+  const visibleDiaries = sortedDiaries.slice(0, visibleDiaryCount);
+
+  visibleDiaries.forEach((item) => {
     const div = document.createElement("div");
     div.className = "diary-item";
     div.innerHTML = `
@@ -172,7 +188,21 @@ function renderUI() {
   });
 }
 
-// 모달 핸들러
+// 하단 무한 스크롤 감지 이벤트
+window.addEventListener("scroll", () => {
+  const diaryTab = document.getElementById("tabDiary");
+  if (!diaryTab || !diaryTab.classList.contains("active")) return;
+
+  const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+  if (scrollTop + clientHeight >= scrollHeight - 100) {
+    if (visibleDiaryCount < appData.diaries.length) {
+      visibleDiaryCount += 5;
+      renderUI();
+    }
+  }
+});
+
+// 모달 제어
 function openModal(id) {
   document.getElementById(id).style.display = "flex";
 }
@@ -206,7 +236,7 @@ function openEditSavingModal(id) {
   openModal("editSavingModal");
 }
 
-// 폼 서브밋 이벤트들
+// 폼 서브밋 핸들러
 document
   .getElementById("settingsForm")
   .addEventListener("submit", async (e) => {
@@ -318,22 +348,20 @@ document.getElementById("diaryForm").addEventListener("submit", async (e) => {
   }
 });
 
+// 일기 삭제 (ImgBB 원본 삭제 안내창 연동)
 async function deleteDiary(id) {
   if (!confirm("일기를 삭제하시겠습니까?")) return;
   const target = appData.diaries.find((d) => d.id === id);
 
   if (target && target.deleteUrl) {
-    try {
-      await fetch(target.deleteUrl, { mode: "no-cors" });
-    } catch (e) {
-      console.warn("ImgBB 이미지 삭제 처리 거부:", e);
-    }
+    window.open(target.deleteUrl, "_blank");
   }
 
   appData.diaries = appData.diaries.filter((d) => d.id !== id);
   await saveStore();
 }
 
+// 마스코트 걸어다니기
 function startDragonRambling() {
   const dragon = document.getElementById("dragonMascot");
   if (!dragon) return;
