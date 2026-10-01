@@ -94,7 +94,7 @@ async function saveStore() {
   }
 }
 
-// ImgBB 업로드
+// 1. ImgBB 업로드 시 display_url (최적화본) 활용
 async function uploadImage(file) {
   if (!file) return { url: null, deleteUrl: null };
   const formData = new FormData();
@@ -110,7 +110,8 @@ async function uploadImage(file) {
   const data = await res.json();
   if (data.success) {
     return {
-      url: data.data.url,
+      // display_url이 없으면 원본 url 사용
+      url: data.data.display_url || data.data.url,
       deleteUrl: data.data.delete_url,
     };
   }
@@ -173,17 +174,18 @@ function renderUI() {
   );
   const visibleDiaries = sortedDiaries.slice(0, visibleDiaryCount);
 
+  // 2. renderUI() 의 <img> 태그에 loading="lazy" 및 decoding="async" 추가
   visibleDiaries.forEach((item) => {
     const div = document.createElement("div");
     div.className = "diary-item";
     div.innerHTML = `
-      <div class="diary-header">
-        <span class="diary-date">${item.date}</span>
-        <button class="btn-action delete" onclick="deleteDiary(${item.id})">삭제</button>
-      </div>
-      ${item.imageUrl ? `<img src="${item.imageUrl}" class="diary-img" alt="일기 사진">` : ""}
-      <div class="diary-content">${item.content}</div>
-    `;
+    <div class="diary-header">
+      <span class="diary-date">${item.date}</span>
+      <button class="btn-action delete" onclick="deleteDiary(${item.id})">삭제</button>
+    </div>
+    ${item.imageUrl ? `<img src="${item.imageUrl}" class="diary-img" alt="일기 사진" loading="lazy" decoding="async">` : ""}
+    <div class="diary-content">${item.content}</div>
+  `;
     diaryFeed.appendChild(div);
   });
 }
