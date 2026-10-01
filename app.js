@@ -183,7 +183,7 @@ function renderUI() {
       <span class="diary-date">${item.date}</span>
       <button class="btn-action delete" onclick="deleteDiary(${item.id})">삭제</button>
     </div>
-    ${item.imageUrl ? `<img src="${item.imageUrl}" class="diary-img" alt="일기 사진" loading="lazy" decoding="async">` : ""}
+    ${item.imageUrl ? `<img src="${item.imageUrl}" class="diary-img" alt="일기 사진" loading="lazy" decoding="async" onclick="openImageViewer('${item.imageUrl}')">` : ""}
     <div class="diary-content">${item.content}</div>
   `;
     diaryFeed.appendChild(div);
@@ -380,4 +380,20 @@ function startDragonRambling() {
 
     currentLeft = newLeft;
   }, 4000);
+}
+
+// 이미지 전체화면 열기
+function openImageViewer(url) {
+  const modal = document.getElementById("imageViewerModal");
+  const img = document.getElementById("imageViewerImg");
+  img.src = url;
+  modal.style.display = "flex";
+}
+
+// 이미지 전체화면 닫기
+function closeImageViewer() {
+  const modal = document.getElementById("imageViewerModal");
+  const img = document.getElementById("imageViewerImg");
+  modal.style.display = "none";
+  img.src = "";
 }

@@ -251,6 +251,20 @@
       </div>
     </div>
 
+    <!-- 5. 이미지 전체화면 모달 (라이트박스) -->
+    <div
+      id="imageViewerModal"
+      class="modal-overlay image-viewer-overlay"
+      onclick="closeImageViewer()"
+    >
+      <div class="image-viewer-card" onclick="event.stopPropagation()">
+        <button class="image-viewer-close" onclick="closeImageViewer()">
+          ✕
+        </button>
+        <img id="imageViewerImg" src="" alt="전체화면 이미지" />
+      </div>
+    </div>
+
     <script src="app.js"></script>
   </body>
 </html>
