@@ -430,7 +430,7 @@ function initMap() {
   const mapEl = document.getElementById("map");
   if (!mapEl) return;
 
-  const defaultCenter = { lat: 35.6895, lng: 139.6917 }; // 도쿄 기본값
+  const defaultCenter = { lat: 43.1155435, lng: 141.3794058}; // 기본값
   map = new google.maps.Map(mapEl, {
     zoom: 12,
     center: defaultCenter,
