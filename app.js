@@ -115,10 +115,26 @@ async function saveStore() {
 }
 
 // 1. ImgBB 업로드 시 display_url (최적화본) 활용
+// 업로드 전 리사이즈/재압축 (최대 1600px, WebP/JPEG) -> 업로드 시간과 로딩 용량 모두 감소
+async function compressImage(file, maxSize = 1600, quality = 0.82) {
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, maxSize / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise((r) => canvas.toBlob(r, "image/webp", quality));
+    return blob && blob.size < file.size ? blob : file;
+  } catch (e) {
+    return file; // 실패 시 원본 사용
+  }
+}
+
 async function uploadImage(file) {
   if (!file) return { url: null, deleteUrl: null };
   const formData = new FormData();
-  formData.append("image", file);
+  formData.append("image", await compressImage(file));
 
   const res = await fetch(
     `https://api.imgbb.com/1/upload?key=${CONFIG.IMGBB_API_KEY}`,
@@ -132,6 +148,8 @@ async function uploadImage(file) {
     return {
       // display_url이 없으면 원본 url 사용
       url: data.data.display_url || data.data.url,
+      // 피드용 중간 크기 썸네일 (없으면 원본)
+      thumbUrl: data.data.medium?.url || data.data.thumb?.url || data.data.display_url || data.data.url,
       deleteUrl: data.data.delete_url,
     };
   }
@@ -203,7 +221,7 @@ function renderUI() {
       <span class="diary-date">${item.date}</span>
       <button class="btn-action delete" onclick="deleteDiary(${item.id})">삭제</button>
     </div>
-    ${item.imageUrl ? `<img src="${item.imageUrl}" class="diary-img" alt="일기 사진" loading="lazy" decoding="async" onclick="openImageViewer('${item.imageUrl}')">` : ""}
+    ${item.imageUrl ? `<img src="${item.thumbUrl || item.imageUrl}" class="diary-img" alt="일기 사진" loading="lazy" decoding="async" onclick="openImageViewer('${item.imageUrl}')">` : ""}
     <div class="diary-content">${item.content}</div>
   `;
     diaryFeed.appendChild(div);
@@ -355,6 +373,7 @@ document.getElementById("diaryForm").addEventListener("submit", async (e) => {
       date,
       content,
       imageUrl: imageData.url,
+      thumbUrl: imageData.thumbUrl,
       deleteUrl: imageData.deleteUrl,
     });
 
@@ -560,7 +579,11 @@ async function getRecommendations() {
         bounds.extend(loc);
 
         const addr = googlePlace.formatted_address || "주소 확인 완료";
-        const gmapsUrl = `https://www.google.com/maps/place/?q=place_id:${googlePlace.place_id}`;
+        // 공식 Maps URLs 형식: api=1 필수, query는 필수(좌표/이름), query_place_id로 정확한 장소 지정
+        const gmapsUrl =
+          `https://www.google.com/maps/search/?api=1` +
+          `&query=${encodeURIComponent(googlePlace.name || place.title)}` +
+          `&query_place_id=${encodeURIComponent(googlePlace.place_id)}`;
 
         itemEl.innerHTML = `
           <div class="card-header-flex">
