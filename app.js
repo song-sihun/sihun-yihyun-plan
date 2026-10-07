@@ -471,35 +471,83 @@ function clearMarkers() {
   currentMarkers = [];
 }
 
-function cleanQuery(str) {
-  if (!str) return "";
-  return str.replace(/^[0-9]+[\.\s\-]+/, "").replace(/["'']/g, "").trim();
+// Places 우선 구조: 구글 지도에서 실제 영업 중인 후보를 먼저 검색 -> Gemini는 후보 번호만 선택
+const FOOD_TYPES = ["restaurant", "food", "cafe", "bakery", "bar", "meal_takeaway", "meal_delivery"];
+const NON_VENUE_TYPES = ["department_store", "shopping_mall", "train_station", "transit_station", "lodging"];
+const CANDIDATE_LIMIT = 12; // Gemini에 넘길 후보 수
+const PICK_COUNT = 3;
+
+function escapeHtml(str) {
+  return String(str ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 }
 
-function searchSingleQuery(queryText) {
-  return new Promise((resolve) => {
-    const cleaned = cleanQuery(queryText);
-    if (!cleaned) return resolve({ result: null, status: "EMPTY_QUERY" });
+// Places 텍스트 검색 1회 -> 영업 중인 음식점 후보만 반환
+function searchCandidates(queryText) {
+  return new Promise((resolve, reject) => {
+    placesService.textSearch({ query: queryText }, (results, status) => {
+      const S = google.maps.places.PlacesServiceStatus;
+      if (status === S.ZERO_RESULTS) return resolve([]);
+      if (status !== S.OK || !results) return reject(new Error(`지도 검색 실패 (${status})`));
 
-    placesService.textSearch({ query: cleaned }, (results, status) => {
-      if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
-        resolve({ result: results[0], status: status });
-      } else {
-        resolve({ result: null, status: status });
-      }
+      const candidates = results
+        .filter((r) => r.geometry && r.place_id && r.name)
+        .filter((r) => !r.business_status || r.business_status === "OPERATIONAL")
+        .filter((r) => !r.types || r.types.some((t) => FOOD_TYPES.includes(t)))
+        .filter((r) => !r.types || !r.types.some((t) => NON_VENUE_TYPES.includes(t)))
+        .slice(0, CANDIDATE_LIMIT);
+      resolve(candidates);
     });
   });
 }
 
-async function findGooglePlaceWithFallback(place) {
-  let res = await searchSingleQuery(place.query_primary);
-  if (res.result) return res;
+// Gemini: 후보 번호 중 추천할 곳을 고르고 추천 이유만 작성 (장소를 새로 만들지 못함)
+async function pickWithGemini(input, candidates) {
+  const list = candidates
+    .map((c, i) => `${i}. ${c.name} | 평점 ${c.rating ?? "정보없음"} (${c.user_ratings_total ?? 0}건) | ${c.formatted_address || ""}`)
+    .join("\n");
 
-  res = await searchSingleQuery(place.query_secondary);
-  if (res.result) return res;
+  const prompt = `사용자 요청: "${input}"
 
-  res = await searchSingleQuery(place.title);
-  return res;
+아래는 구글 지도에서 검색된 실제 영업 중인 후보 목록입니다. 이 목록에 있는 곳만 선택할 수 있습니다.
+${list}
+
+[규칙]
+1. 요청에 가장 잘 맞는 ${PICK_COUNT}곳을 후보 번호(index)로 고르세요. 평점과 리뷰 수도 참고하세요.
+2. 목록에 없는 장소를 만들어내지 마세요. 상호는 후보 이름을 그대로 보고 한글 표기(title)만 붙이세요.
+3. description은 후보 정보(이름, 평점, 주소)에서 알 수 있는 범위에서 추천 이유 1-2문장으로 쓰세요. 확인되지 않은 메뉴나 사실은 단정하지 마세요.
+
+JSON 배열로만 응답하세요:
+[{"index": 0, "title": "한글 표기 상호", "description": "추천 이유"}]`;
+
+  const MODEL_NAME = "gemini-3.5-flash-lite";
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { responseMimeType: "application/json" },
+      }),
+    },
+  );
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error?.message || "Gemini 호출 실패");
+
+  const picks = JSON.parse(data.candidates[0].content.parts.map((p) => p.text || "").join(""));
+  const used = new Set();
+  return picks
+    .filter((p) => Number.isInteger(p.index) && candidates[p.index] && !used.has(p.index) && used.add(p.index))
+    .slice(0, PICK_COUNT)
+    .map((p) => ({ place: candidates[p.index], title: p.title || candidates[p.index].name, description: p.description || "" }));
+}
+
+// Gemini 실패 시 구글 평점 기준 상위 후보로 대체
+function pickByRating(candidates) {
+  return [...candidates]
+    .sort((a, b) => (b.rating || 0) * Math.log10((b.user_ratings_total || 0) + 10) - (a.rating || 0) * Math.log10((a.user_ratings_total || 0) + 10))
+    .slice(0, PICK_COUNT)
+    .map((c) => ({ place: c, title: c.name, description: "AI 추천을 불러오지 못해 구글 평점 기준으로 표시한 장소입니다." }));
 }
 
 async function getRecommendations() {
@@ -517,124 +565,83 @@ async function getRecommendations() {
 
   resultsDiv.innerHTML = `
     <div class="card shadow" style="text-align: center; padding: 20px;">
-      <div class="card-value highlight" style="font-size: 16px;">AI가 장소를 분석 중입니다...</div>
+      <div class="card-value highlight" style="font-size: 16px;">지도에서 맛집을 찾고 있습니다...</div>
       <div class="progress-bar-bg" style="margin-top: 10px;"><div class="progress-bar-fill" style="width: 60%;"></div></div>
     </div>
   `;
   clearMarkers();
 
-  const prompt = `사용자 요청: "${input}"\n
-위 요청에 맞는 실제 존재하는 추천 장소 3곳을 선정하세요.
-
-[검색 키워드 생성 규칙]
-1. query_primary: 구글 지도에서 검색할 공식 영문 또는 현지 원어 상호명과 도시명
-2. query_secondary: 한글 상호명과 도시명
-3. 수식어나 특수문자는 query에 절대 포함하지 마세요.
-
-반드시 아래 형식의 JSON 배열로만 응답하세요:
-[
-  {
-    "title": "한글 장소명",
-    "query_primary": "영문/원어 상호명 도시명",
-    "query_secondary": "한글 상호명 도시명",
-    "description": "추천 이유 1-2문장"
-  }
-]`;
-
   try {
-    const MODEL_NAME = "gemini-3.5-flash-lite";
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { responseMimeType: "application/json" },
-        }),
-      }
-    );
+    const candidates = await searchCandidates(input);
+    if (candidates.length === 0) {
+      resultsDiv.innerHTML = `<div class="card shadow" style="text-align:center;">검색 결과가 없습니다. 지역명을 포함해 다시 입력해보세요. (예: 삿포로역 근처 디저트)</div>`;
+      return;
+    }
 
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error?.message || "Gemini 호출 실패");
-
-    const rawText = data.candidates[0].content.parts[0].text;
-    const places = JSON.parse(rawText);
+    let picks;
+    try {
+      picks = await pickWithGemini(input, candidates);
+      if (picks.length === 0) picks = pickByRating(candidates);
+    } catch (err) {
+      console.warn("Gemini 선택 실패, 평점 기준으로 대체", err);
+      picks = pickByRating(candidates);
+    }
 
     resultsDiv.innerHTML = "";
     const bounds = new google.maps.LatLngBounds();
     const infoWindow = new google.maps.InfoWindow();
 
-    for (let i = 0; i < places.length; i++) {
-      const place = places[i];
-      const searchRes = await findGooglePlaceWithFallback(place);
-      const googlePlace = searchRes.result;
+    picks.forEach(({ place: gp, title, description }, i) => {
+      const loc = gp.geometry.location;
+      bounds.extend(loc);
+
+      const addr = gp.formatted_address || "";
+      // 공식 Maps URLs 형식: api=1 필수, query_place_id로 정확한 장소 지정
+      const gmapsUrl =
+        `https://www.google.com/maps/search/?api=1` +
+        `&query=${encodeURIComponent(gp.name)}` +
+        `&query_place_id=${encodeURIComponent(gp.place_id)}`;
+      const ratingText = gp.rating ? `⭐ ${gp.rating} (${(gp.user_ratings_total || 0).toLocaleString()}건)` : "평점 정보 없음";
+      const markerIndex = currentMarkers.length;
 
       const itemEl = document.createElement("article");
       itemEl.className = "card shadow";
       itemEl.style.marginBottom = "12px";
-
-      if (googlePlace && googlePlace.geometry) {
-        const loc = googlePlace.geometry.location;
-        bounds.extend(loc);
-
-        const addr = googlePlace.formatted_address || "주소 확인 완료";
-        // 공식 Maps URLs 형식: api=1 필수, query는 필수(좌표/이름), query_place_id로 정확한 장소 지정
-        const gmapsUrl =
-          `https://www.google.com/maps/search/?api=1` +
-          `&query=${encodeURIComponent(googlePlace.name || place.title)}` +
-          `&query_place_id=${encodeURIComponent(googlePlace.place_id)}`;
-
-        itemEl.innerHTML = `
-          <div class="card-header-flex">
-            <span class="card-label">RECOMMEND 0${i + 1}</span>
-            <button class="btn-text-edit" onclick="window.open('${gmapsUrl}', '_blank')">지도 앱 열기 ↗</button>
-          </div>
-          <h3 style="font-size: 18px; font-weight: 800; margin: 6px 0;">${place.title}</h3>
-          <p style="font-size: 12px; color: var(--text-sub, #64748b); margin-bottom: 10px;">📍 ${addr}</p>
-          <p style="font-size: 14px; margin-bottom: 12px; line-height: 1.5;">${place.description}</p>
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 12px; color: #16a34a; font-weight: 600;">✓ 구글 지도 위치 매칭 성공</span>
-            <button class="btn-primary btn-snow" onclick="focusMarker(${i})">위치 보기</button>
-          </div>
-        `;
-
-        const marker = new google.maps.Marker({
-          position: loc,
-          map: map,
-          label: `${i + 1}`,
-        });
-
-        currentMarkers.push(marker);
-
-        marker.addListener("click", () => {
-          infoWindow.setContent(`
-            <div style="padding:6px; color: #1e293b;">
-              <b style="font-size: 14px; color:#2563eb;">${place.title}</b><br>
-              <span style="font-size:12px; color:#64748b;">${addr}</span>
-            </div>
-          `);
-          infoWindow.open(map, marker);
-        });
-      } else {
-        itemEl.innerHTML = `
-          <div class="card-header-flex">
-            <span class="card-label" style="color: var(--danger, #ef4444);">LOCATION NOT FOUND</span>
-          </div>
-          <h3 style="font-size: 18px; font-weight: 800; margin: 6px 0;">${place.title}</h3>
-          <p style="font-size: 14px;">${place.description}</p>
-        `;
-      }
-
+      itemEl.innerHTML = `
+        <div class="card-header-flex">
+          <span class="card-label">RECOMMEND 0${i + 1}</span>
+          <button class="btn-text-edit" onclick="window.open('${gmapsUrl}', '_blank')">지도 앱 열기 ↗</button>
+        </div>
+        <h3 style="font-size: 18px; font-weight: 800; margin: 6px 0;">${escapeHtml(title)}</h3>
+        <p style="font-size: 12px; color: var(--text-sub, #64748b); margin-bottom: 4px;">${escapeHtml(gp.name)} · ${ratingText}</p>
+        <p style="font-size: 12px; color: var(--text-sub, #64748b); margin-bottom: 10px;">📍 ${escapeHtml(addr)}</p>
+        <p style="font-size: 14px; margin-bottom: 12px; line-height: 1.5;">${escapeHtml(description)}</p>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 12px; color: #16a34a; font-weight: 600;">✓ 구글 지도 등록 장소</span>
+          <button class="btn-primary btn-snow" onclick="focusMarker(${markerIndex})">위치 보기</button>
+        </div>
+      `;
       resultsDiv.appendChild(itemEl);
-    }
+
+      const marker = new google.maps.Marker({ position: loc, map: map, label: `${i + 1}` });
+      currentMarkers.push(marker);
+      marker.addListener("click", () => {
+        infoWindow.setContent(`
+          <div style="padding:6px; color: #1e293b;">
+            <b style="font-size: 14px; color:#2563eb;">${escapeHtml(title)}</b><br>
+            <span style="font-size:12px; color:#64748b;">${escapeHtml(addr)}</span>
+          </div>
+        `);
+        infoWindow.open(map, marker);
+      });
+    });
 
     if (currentMarkers.length > 0) {
       map.fitBounds(bounds);
     }
   } catch (err) {
     console.error(err);
-    resultsDiv.innerHTML = `<div class="card shadow" style="color: red; text-align:center;">오류: ${err.message}</div>`;
+    resultsDiv.innerHTML = `<div class="card shadow" style="color: red; text-align:center;">오류: ${escapeHtml(err.message)}</div>`;
   } finally {
     searchBtn.disabled = false;
     searchBtn.innerText = "🔍 AI 추천 및 위치 찾기";
